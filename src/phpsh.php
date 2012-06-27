@@ -168,6 +168,9 @@ if (!function_exists('___phpsh___pretty_print')) {
     case 'f':
       ___phpsh___parse_dump_assert($dump, $pos, 'float');
       return ___phpsh___parse_dump_delim_grab($dump, $pos, $normal_end_check);
+    case 'd':
+      ___phpsh___parse_dump_assert($dump, $pos, 'double');
+      return ___phpsh___parse_dump_delim_grab($dump, $pos, $normal_end_check);
     case 'i':
       ___phpsh___parse_dump_assert($dump, $pos, 'int');
       return ___phpsh___parse_dump_delim_grab($dump, $pos, $normal_end_check);
@@ -196,14 +199,14 @@ if (!function_exists('___phpsh___pretty_print')) {
     $arr_lines = array();
     foreach (array_keys($x) as $key) {
       if (is_int($key)) {
-        $key_str_php = (string)$key;
+        $key_str_php = "[".(string)$key."]";
         $key_str_correct = $key_str_php;
       } else {
-        $key_str_php = '"'.$key.'"';
+        $key_str_php = '\''.$key.'\'';
         $key_str_correct = ___phpsh___str_lit($key);
       }
-      ___phpsh___parse_dump_assert($dump, $pos, $depth_str.$indent_str.'['.
-        $key_str_php.']=>'."\n".$depth_str.$indent_str);
+      ___phpsh___parse_dump_assert($dump, $pos, $depth_str.$indent_str.''.
+        $key_str_php.' =>'."\n".$depth_str.$indent_str);
       if ($dump[$pos] == '*') {
         ___phpsh___parse_dump_assert($dump, $pos, '*RECURSION*');
         $val = '*RECURSION*';
@@ -632,4 +635,3 @@ unset($___phpsh___do_autocomplete);
 unset($___phpsh___do_undefined_function_check);
 unset($___phpsh___fork_every_command);
 $___phpsh___->interactive_loop();
-
