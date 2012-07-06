@@ -139,11 +139,12 @@ if (!function_exists('___phpsh___pretty_print')) {
         $arr_lines,
         array($depth_str.')')
       ));
-    case 'o':
-      ___phpsh___parse_dump_assert($dump, $pos, 'object');
-      $obj_type_str = ___phpsh___parse_dump_delim_grab($dump, $pos);
+
+      case 'c':
+      ___phpsh___parse_dump_assert($dump, $pos, 'class');
+      $obj_type_str = ___phpsh___parse_dump_delim_grab($dump, $pos, false, " #");
       $obj_num_str =
-        ___phpsh___parse_dump_delim_grab($dump, $pos, false, '# ');
+        ___phpsh___parse_dump_until($dump, $pos, false, ' ');
       $obj_len = (int)___phpsh___parse_dump_delim_grab($dump, $pos);
       ___phpsh___parse_dump_assert($dump, $pos, " {\n");
       $obj_lines = ___phpsh___parse_dump_obj_lines($x, $dump, $pos, $obj_len,
@@ -218,19 +219,18 @@ if (!function_exists('___phpsh___pretty_print')) {
     }
     return $arr_lines;
   }
+
   function ___phpsh___parse_dump_obj_lines($x, $dump, &$pos, $arr_len, $depth,
       $depth_str, $indent_str) {
     $arr_lines = array();
     // this exposes private/protected members (a hack within a hack)
     $x_arr = ___phpsh___obj_to_arr($x);
     for ($i = 0; $i < $arr_len; $i++) {
-      ___phpsh___parse_dump_assert($dump, $pos, $depth_str.$indent_str.'[');
-      $key = ___phpsh___parse_dump_delim_grab($dump, $pos, false, '""');
-      if ($dump[$pos] == ':') {
-        $key .= ':'.___phpsh___parse_dump_delim_grab($dump, $pos, false, ':]');
-        $pos--;
-      }
-      ___phpsh___parse_dump_assert($dump, $pos, "]=>\n".$depth_str.$indent_str);
+      $visibility = ___phpsh___parse_dump_until($dump, $pos, false, " $");
+      $visibility = trim($visibility);
+      $key = ___phpsh___parse_dump_delim_grab($dump, $pos, false, '$ ');
+      $key .= ':'.$visibility;
+      ___phpsh___parse_dump_assert($dump, $pos, "=>\n".$depth_str.$indent_str);
       if ($dump[$pos] == '*') {
         ___phpsh___parse_dump_assert($dump, $pos, '*RECURSION*');
         $val = '*RECURSION*';
@@ -249,6 +249,7 @@ if (!function_exists('___phpsh___pretty_print')) {
     }
     return $arr_lines;
   }
+
   function ___phpsh___obj_to_arr($x) {
     if (is_object($x)) {
       $raw_array = (array)$x;
@@ -261,6 +262,7 @@ if (!function_exists('___phpsh___pretty_print')) {
     }
     return (array)$x;
   }
+
   function ___phpsh___parse_dump_assert($dump, &$pos, $str, $end=false) {
     $len = strlen($str);
     if ($str !== '' && substr($dump, $pos, $len) !== $str) {
@@ -275,6 +277,20 @@ if (!function_exists('___phpsh___pretty_print')) {
     }
     return true;
   }
+
+  function ___phpsh___parse_dump_until($dump, &$pos, $end=false, $until=" ") {
+    $pos_end = strpos($dump, $until, $pos + 1);
+    $pos_dump_start = $pos;
+    if ($pos_end === false) {
+      throw new Exception("parse error execting '".$until."' after position ".$pos);
+    }
+    $pos = $pos_end + 1;
+    if ($end) {
+      ___phpsh___parse_dump_assert($dump, $pos, '', true);
+    }
+    return substr($dump, $pos_dump_start, $pos_end - $pos_dump_start);
+  }
+
   function ___phpsh___parse_dump_delim_grab($dump, &$pos, $end=false,
       $delims='()') {
     assert(strlen($delims) === 2);
@@ -292,6 +308,7 @@ if (!function_exists('___phpsh___pretty_print')) {
     return substr($dump, $pos_open_paren + 1,
       $pos_close_paren - $pos_open_paren - 1);
   }
+
   // this is provided for our in-house unit testing and in case it's useful to
   // anyone modifying the default pretty-printer
   function ___phpsh___assert_eq(&$i, $f, $x, $y) {
