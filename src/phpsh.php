@@ -1,4 +1,4 @@
-#!/usr/bin/env php
+#!/usr/bin/env php5.3
 <?php
 // Copyright 2004-2007 Facebook. All Rights Reserved.
 // this is used by phpsh.py to exec php commands and maintain state
@@ -186,8 +186,15 @@ if (!function_exists('___phpsh___pretty_print')) {
       ___phpsh___parse_dump_assert($dump, $pos, 'string');
       $str_len = (int)___phpsh___parse_dump_delim_grab($dump, $pos);
       ___phpsh___parse_dump_assert($dump, $pos, ' "');
-      $str = substr($dump, $pos, $str_len);
-      $pos += $str_len;
+      $str = "";
+      for (;$str_len>0;) {
+        $_str = substr($dump, $pos, $str_len);
+        $_str = stripcslashes($_str);
+        $str .= $_str;
+        $pos += $str_len;
+        $str_len -= strlen($_str);
+//        echo "str: $str\n";
+      }
       ___phpsh___parse_dump_assert($dump, $pos, '"', $normal_end_check);
       return ___phpsh___str_lit($str);
     default:
@@ -269,7 +276,7 @@ if (!function_exists('___phpsh___pretty_print')) {
       // todo; own exception type?
       throw new Exception(
         "parse error looking for '".$str."' at position ".$pos.
-        '; found instead: '.substr($dump, $pos));
+        '; found instead: |'.substr($dump, $pos)."|");
     }
     $pos += $len;
     if ($end && strlen($dump) > $pos) {
