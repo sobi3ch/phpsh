@@ -264,7 +264,7 @@ if (!function_exists('___phpsh___pretty_print')) {
       // todo; own exception type?
       throw new Exception(
         "parse error looking for '".$str."' at position ".$pos.
-        '; found instead: '.substr($dump, $pos));
+        "; found instead: '".substr($dump, $pos, $len)."'");
     }
     $pos += $len;
     if ($end && strlen($dump) > $pos) {
